@@ -16,6 +16,7 @@ const sketch = (p) => {
     let stars = [];
     let ideaTrajectory = [];
     let colorPalette = [];
+    let hoveredIdea = null;
     const MAX_PALETTE_SIZE = 4;
 
     p.setup = () => {
@@ -49,9 +50,12 @@ const sketch = (p) => {
     };
 
     p.draw = () => {
+        // 1. Draw the background
         p.background(10, 10, 20);
         drawStarfield();
         p.image(trailLayer, 0, 0);
+
+        // 2. Draw the in-world elements
         drawIdeaNodes();
         p.noStroke();
         if (colorPalette.length > 0) {
@@ -72,6 +76,8 @@ const sketch = (p) => {
                 }
             }
         }
+
+        // 3. Draw the bicycle
         if (!bicycle) return;
         const ideaInput = document.getElementById('idea-input');
         if (bicycle.isDropping) {
@@ -110,6 +116,9 @@ const sketch = (p) => {
             }
         }
         drawBicycle();
+
+        // 4. Draw the tooltip
+        drawTooltip();
     };
 
     // --- All Helper Functions are now inside the main sketch function ---
@@ -236,32 +245,46 @@ const sketch = (p) => {
 
     function drawIdeaNodes() {
         const hoverRadius = 10;
-        let isHovering = false;
+        hoveredIdea = null; // Reset the hovered idea at the start of every frame
+    
         for (const idea of ideaTrajectory) {
             const distance = p.dist(p.mouseX, p.mouseY, idea.x, idea.y);
             let nodeAlpha = 120;
-            if (distance < hoverRadius) { nodeAlpha = 255; }
+    
+            // If we are hovering, set the alpha and update our global variable
+            if (distance < hoverRadius) {
+                nodeAlpha = 255;
+                hoveredIdea = idea; // Set the currently hovered idea
+            }
+    
             p.fill(255, 255, 0, nodeAlpha);
             p.noStroke();
             p.ellipse(idea.x, idea.y, hoverRadius);
-            if (!isHovering && distance < hoverRadius) {
-                isHovering = true;
-                const textBoxWidth = 200;
-                const textPadding = 10;
-                const boxX = idea.x + 15;
-                const boxY = idea.y - 20;
-                p.fill(0, 0, 0, 180);
-                p.stroke(255, 150);
-                p.strokeWeight(1);
-                p.rect(boxX, boxY, textBoxWidth + textPadding * 2, 80, 5);
-                p.noStroke();
-                p.fill(255);
-                p.textSize(12);
-                p.textAlign(p.LEFT, p.TOP);
-                p.text(idea.text, boxX + textPadding, boxY + textPadding, textBoxWidth);
-            }
         }
     }
+    function drawTooltip() {
+        // If no idea is being hovered, do nothing.
+        if (!hoveredIdea) {
+            return;
+        }
+    
+        // If we are hovering, draw the tooltip for the stored hoveredIdea.
+        const textBoxWidth = 200;
+        const textPadding = 10;
+        const boxX = hoveredIdea.x + 15;
+        const boxY = hoveredIdea.y - 20;
+    
+        p.fill(0, 0, 0, 180);
+        p.stroke(255, 150);
+        p.strokeWeight(1);
+        p.rect(boxX, boxY, textBoxWidth + textPadding * 2, 80, 5);
+    
+        p.noStroke();
+        p.fill(255);
+        p.textSize(12);
+        p.textAlign(p.LEFT, p.TOP);
+        p.text(hoveredIdea.text, boxX + textPadding, boxY + textPadding, textBoxWidth);
+    }    
 }; // --- END OF THE MAIN SKETCH FUNCTION ---
 
 // This main function runs once. It loads the AI models and then starts the p5 sketch.
