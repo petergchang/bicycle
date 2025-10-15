@@ -11,6 +11,7 @@ let encoder = null;
 const sketch = (p) => {
     let trailLayer;
     let bicycle;
+    let noiseTime = 0;
     let totalMovement = 0;
     let gameState = 'SEEDING';
     let particles = [];
@@ -21,6 +22,7 @@ const sketch = (p) => {
     const MAX_PALETTE_SIZE = 4;
 
     p.setup = () => {
+        p.colorMode(p.HSB, 360, 100, 100, 1);
         p.createCanvas(p.windowWidth, p.windowHeight).parent('canvas-container');
         trailLayer = p.createGraphics(p.windowWidth, p.windowHeight);
         bicycle = null;
@@ -70,10 +72,19 @@ const sketch = (p) => {
                     particles.splice(i, 1);
                 } else {
                     const c = particle.color;
-                    p.fill(p.red(c), p.green(c), p.blue(c), particle.lifespan);
-                    p.ellipse(particle.x, particle.y, 5);
-                    trailLayer.fill(p.red(c), p.green(c), p.blue(c), 5);
+                    // 1. Draw the live, fading particle STROKE on the main canvas
+                    p.strokeWeight(1.5);
+                    p.stroke(p.hue(c), p.saturation(c), p.brightness(c), (particle.lifespan / 255) * 0.5);
+                    p.line(particle.px, particle.py, particle.x, particle.y);
+                
+                    // 2. "Stamp" a faint, permanent DOT onto the trailLayer
+                    trailLayer.noStroke();
+                    trailLayer.fill(p.hue(c), p.saturation(c), p.brightness(c), 0.02); // Lower alpha for subtlety
                     trailLayer.ellipse(particle.x, particle.y, 3);
+                    
+                    // 3. Update the particle's previous position for the next frame
+                    particle.px = particle.x;
+                    particle.py = particle.y;                
                 }
             }
         }
@@ -130,6 +141,9 @@ const sketch = (p) => {
 
         // 5. Draw the UI
         drawUI();
+
+        // 6. Update the noise time
+        noiseTime += 0.005;
     };
 
     // --- All Helper Functions are now inside the main sketch function ---
@@ -162,7 +176,11 @@ const sketch = (p) => {
                 bicycle.pendingIdeaText = inputText;
                 bicycle.pendingJumpDistance = jumpDistance;
                 bicycle.arrivalPoint = { x: bicycle.targetX, y: bicycle.targetY };
-                const newColor = p.color(p.map(newVector[10], -0.1, 0.1, 0, 255), p.map(newVector[150], -0.1, 0.1, 0, 255), p.map(newVector[300], -0.1, 0.1, 0, 255));
+                const newColor = p.color(
+                    p.map(newVector[10], -0.1, 0.1, 0, 360),   // Hue: The core color of the idea
+                    p.map(newVector[150], -0.1, 0.1, 60, 100), // Saturation: From a rich color to fully vibrant
+                    p.map(newVector[300], -0.1, 0.1, 70, 100)  // Brightness: From a deep color to fully bright
+                );                
                 colorPalette.unshift(newColor);
                 if (colorPalette.length > MAX_PALETTE_SIZE) { colorPalette.pop(); }
                 bicycle.currentVector = newVector;
@@ -213,8 +231,19 @@ const sketch = (p) => {
         if (bicycle.speed < 0.1) return;
         const backWheelX = bicycle.x - bicycle.wheelBase * p.cos(bicycle.angle);
         const backWheelY = bicycle.y - bicycle.wheelBase * p.sin(bicycle.angle);
-        for (let i = 0; i < 2; i++) {
-            particles.push({ x: backWheelX, y: backWheelY, vx: p.random(-0.5, 0.5), vy: p.random(-0.5, 0.5), lifespan: 255, color: getMixedColor() });
+        for (let i = 0; i < 4; i++) {
+            // We'll use the wheel positions to "seed" the noise, making it unique
+            const backWheelX = bicycle.x - bicycle.wheelBase * p.cos(bicycle.angle);
+            const backWheelY = bicycle.y - bicycle.wheelBase * p.sin(bicycle.angle);
+
+            // A particle from the back wheel
+            particles.push({
+                x: backWheelX, y: backWheelY,
+                px: backWheelX, py: backWheelY,
+                vx: p.map(p.noise(backWheelX * 0.01, backWheelY * 0.01, noiseTime), 0, 1, -1, 1),
+                vy: p.map(p.noise(backWheelX * 0.01, backWheelY * 0.01, noiseTime + 100), 0, 1, -1, 1),
+                lifespan: 255, color: getMixedColor()
+            });
         }
     }
 
