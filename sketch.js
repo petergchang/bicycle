@@ -158,7 +158,7 @@ const sketch = (p) => {
                 const moveScale = 750;
                 bicycle.targetX = bicycle.x + dx * moveScale;
                 bicycle.targetY = bicycle.y + dy * moveScale;
-                const jumpDistance = p.dist(bicycle.x, bicycle.y, targetX, targetY);
+                const jumpDistance = p.dist(bicycle.x, bicycle.y, bicycle.targetX, bicycle.targetY);
                 bicycle.pendingIdeaText = inputText;
                 bicycle.pendingJumpDistance = jumpDistance;
                 bicycle.arrivalPoint = { x: bicycle.targetX, y: bicycle.targetY };
