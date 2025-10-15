@@ -266,7 +266,7 @@ const sketch = (p) => {
 
 // This main function runs once. It loads the AI models and then starts the p5 sketch.
 async function main() {
-    console.log("Loading AI models...");
+    console.log("Constructing the Bicycle for the Mind...");
     classifier = await pipeline('zero-shot-classification', 'Xenova/bart-large-mnli');
     encoder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
     document.getElementById('loading-overlay').style.display = 'none';
