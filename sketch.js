@@ -1,4 +1,6 @@
-import { pipeline } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0';
+import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0';
+
+env.allowLocalModels = false;
 
 // These variables are defined outside the sketch so the AI models can be loaded first.
 let classifier = null;
@@ -138,7 +140,7 @@ const sketch = (p) => {
                 bicycle.targetY = bicycle.y + dy * moveScale;
                 bicycle.pendingIdeaText = inputText;
                 bicycle.arrivalPoint = { x: bicycle.targetX, y: bicycle.targetY };
-                const newColor = p.color(p.map(newVector[10], -0.2, 0.2, 0, 255), p.map(newVector[150], -0.2, 0.2, 0, 255), p.map(newVector[300], -0.2, 0.2, 0, 255));
+                const newColor = p.color(p.map(newVector[10], -0.1, 0.1, 0, 255), p.map(newVector[150], -0.1, 0.1, 0, 255), p.map(newVector[300], -0.1, 0.1, 0, 255));
                 colorPalette.unshift(newColor);
                 if (colorPalette.length > MAX_PALETTE_SIZE) { colorPalette.pop(); }
                 bicycle.currentVector = newVector;
@@ -158,7 +160,7 @@ const sketch = (p) => {
             wheelRadius: 15, wheelBase: 25, currentVector: initialVector,
             pendingIdeaText: null, arrivalPoint: null
         };
-        const initialColor = p.color(p.map(initialVector[10], -0.2, 0.2, 0, 255), p.map(initialVector[150], -0.2, 0.2, 0, 255), p.map(initialVector[300], -0.2, 0.2, 0, 255));
+        const initialColor = p.color(p.map(initialVector[10], -0.1, 0.1, 0, 255), p.map(initialVector[150], -0.1, 0.1, 0, 255), p.map(initialVector[300], -0.1, 0.1, 0, 255));
         colorPalette = [initialColor];
     }
 
