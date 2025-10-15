@@ -11,6 +11,7 @@ let encoder = null;
 const sketch = (p) => {
     let trailLayer;
     let bicycle;
+    let totalMovement = 0;
     let gameState = 'SEEDING';
     let particles = [];
     let stars = [];
@@ -93,6 +94,7 @@ const sketch = (p) => {
                 }
             }
         } else if (bicycle.targetX !== null) {
+            totalMovement += bicycle.speed;
             bicycle.px = bicycle.x;
             bicycle.py = bicycle.y;
             bicycle.x = p.lerp(bicycle.x, bicycle.targetX, 0.03);
@@ -104,9 +106,15 @@ const sketch = (p) => {
             emitParticles();
             if (p.dist(bicycle.x, bicycle.y, bicycle.targetX, bicycle.targetY) < 2) {
                 if (bicycle.pendingIdeaText && bicycle.arrivalPoint) {
-                    ideaTrajectory.push({ text: bicycle.pendingIdeaText, x: bicycle.arrivalPoint.x, y: bicycle.arrivalPoint.y });
+                    ideaTrajectory.push({ 
+                        text: bicycle.pendingIdeaText, 
+                        x: bicycle.arrivalPoint.x, 
+                        y: bicycle.arrivalPoint.y,
+                        distance: bicycle.pendingJumpDistance
+                    });
                     bicycle.pendingIdeaText = null;
                     bicycle.arrivalPoint = null;
+                    bicycle.pendingJumpDistance = null;
                 }
                 bicycle.targetX = null;
                 bicycle.targetY = null;
@@ -119,6 +127,9 @@ const sketch = (p) => {
 
         // 4. Draw the tooltip
         drawTooltip();
+
+        // 5. Draw the UI
+        drawUI();
     };
 
     // --- All Helper Functions are now inside the main sketch function ---
@@ -137,9 +148,9 @@ const sketch = (p) => {
             console.log("Analysis complete:", analysis);
             if (gameState === 'SEEDING') {
                 spawnBicycle(analysis.vector);
-                ideaTrajectory.push({ text: inputText, x: bicycle.x, y: bicycle.groundY });
+                ideaTrajectory.push({ text: inputText, x: bicycle.x, y: bicycle.groundY, distance: 0 });
                 gameState = 'DEVELOPING';
-                ideaInput.placeholder = "Develop the idea...";
+                ideaInput.placeholder = "Move the bicycle...";
             } else if (gameState === 'DEVELOPING') {
                 const newVector = analysis.vector;
                 const dx = newVector[5] - bicycle.currentVector[5];
@@ -147,7 +158,9 @@ const sketch = (p) => {
                 const moveScale = 750;
                 bicycle.targetX = bicycle.x + dx * moveScale;
                 bicycle.targetY = bicycle.y + dy * moveScale;
+                const jumpDistance = p.dist(bicycle.x, bicycle.y, targetX, targetY);
                 bicycle.pendingIdeaText = inputText;
+                bicycle.pendingJumpDistance = jumpDistance;
                 bicycle.arrivalPoint = { x: bicycle.targetX, y: bicycle.targetY };
                 const newColor = p.color(p.map(newVector[10], -0.1, 0.1, 0, 255), p.map(newVector[150], -0.1, 0.1, 0, 255), p.map(newVector[300], -0.1, 0.1, 0, 255));
                 colorPalette.unshift(newColor);
@@ -217,11 +230,22 @@ const sketch = (p) => {
         p.background(10, 10, 20);
         drawStarfield();
         p.image(trailLayer, 0, 0);
-        p.saveCanvas('bicycle-for-the-mind', 'png');
+        drawIdeaNodes();
+        drawUI();
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
+        p.saveCanvas(`bicycle-for-the-mind-${timestamp}`, 'png');
         const formattedTrajectory = ideaTrajectory.map((idea, index) => {
-            return `${index + 1}. [${p.round(idea.x)}, ${p.round(idea.y)}] - ${idea.text}`;
+            if (index === 0) {
+                return `1. (Seed) - ${idea.text}`;
+            }
+            // Scale the distance to match the on-screen display
+            const jumpDist = (idea.distance / 100).toFixed(2);
+            return `${index + 1}. (+${jumpDist}m) - ${idea.text}`;
         });
-        p.saveStrings(formattedTrajectory, 'idea-trajectory', 'txt');
+        const totalDist = (totalMovement / 100).toFixed(2);
+        formattedTrajectory.unshift(`BICYCLE FOR THE MIND\nTotal Movement: ${totalDist}m\n---`);
+        
+        p.saveStrings(formattedTrajectory, `idea-trajectory_${timestamp}`, 'txt');    
     }
 
     function lerpAngle(startAngle, endAngle, amount) {
@@ -281,6 +305,20 @@ const sketch = (p) => {
         p.textSize(12);
         p.textAlign(p.LEFT, p.TOP);
         p.text(hoveredIdea.text, boxX + textPadding, boxY + textPadding, textBoxWidth);
+    }
+
+    function drawUI() {
+        // We'll scale the raw pixel distance down to make the numbers feel more meaningful
+        const displayMiles = (totalMovement / 100).toFixed(2);
+    
+        p.fill(255, 200); // Faint white
+        p.noStroke();
+        p.textSize(14);
+        p.textAlign(p.LEFT, p.TOP);
+        p.textFont('sans-serif');
+        
+        // Draw the text in the top-left corner
+        p.text(`Total Movement: ${displayMiles}m`, 20, 20);
     }    
 }; // --- END OF THE MAIN SKETCH FUNCTION ---
 
