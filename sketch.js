@@ -25,6 +25,7 @@ const sketch = (p) => {
         p.colorMode(p.HSB, 360, 100, 100, 1);
         p.createCanvas(p.windowWidth, p.windowHeight).parent('canvas-container');
         trailLayer = p.createGraphics(p.windowWidth, p.windowHeight);
+        trailLayer.colorMode(p.HSB, 360, 100, 100, 1);
         bicycle = null;
 
         const ideaInput = document.getElementById('idea-input');
@@ -54,7 +55,7 @@ const sketch = (p) => {
 
     p.draw = () => {
         // 1. Draw the background
-        p.background(10, 10, 20);
+        p.background(240, 50, 8);
         drawStarfield();
         p.image(trailLayer, 0, 0);
 
@@ -200,7 +201,11 @@ const sketch = (p) => {
             wheelRadius: 15, wheelBase: 25, currentVector: initialVector,
             pendingIdeaText: null, arrivalPoint: null
         };
-        const initialColor = p.color(p.map(initialVector[10], -0.1, 0.1, 0, 255), p.map(initialVector[150], -0.1, 0.1, 0, 255), p.map(initialVector[300], -0.1, 0.1, 0, 255));
+        const initialColor = p.color(
+            p.map(initialVector[10], -0.1, 0.1, 0, 360),   // Hue
+            p.map(initialVector[150], -0.1, 0.1, 60, 100), // Saturation
+            p.map(initialVector[300], -0.1, 0.1, 70, 100)  // Brightness
+        );    
         colorPalette = [initialColor];
     }
 
@@ -307,7 +312,7 @@ const sketch = (p) => {
                 hoveredIdea = idea; // Set the currently hovered idea
             }
     
-            p.fill(255, 255, 0, nodeAlpha);
+            p.fill(60, 100, 100, nodeAlpha);
             p.noStroke();
             p.ellipse(idea.x, idea.y, hoverRadius);
         }
