@@ -198,12 +198,9 @@ const sketch = (p) => {
 
     function emitParticles() {
         if (bicycle.speed < 0.1) return;
-        const frontWheelX = bicycle.x + bicycle.wheelBase * p.cos(bicycle.angle);
-        const frontWheelY = bicycle.y + bicycle.wheelBase * p.sin(bicycle.angle);
         const backWheelX = bicycle.x - bicycle.wheelBase * p.cos(bicycle.angle);
         const backWheelY = bicycle.y - bicycle.wheelBase * p.sin(bicycle.angle);
         for (let i = 0; i < 2; i++) {
-            particles.push({ x: frontWheelX, y: frontWheelY, vx: p.random(-0.5, 0.5), vy: p.random(-0.5, 0.5), lifespan: 255, color: getMixedColor() });
             particles.push({ x: backWheelX, y: backWheelY, vx: p.random(-0.5, 0.5), vy: p.random(-0.5, 0.5), lifespan: 255, color: getMixedColor() });
         }
     }
