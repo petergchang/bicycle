@@ -57,6 +57,7 @@
 </head>
 <body>
     <!-- ALL your HTML content comes FIRST -->
+    <div id="canvas-container"></div>
     <div id="loading-overlay">
         <div id="loading-text">Loading AI models... This may take a moment.</div>
     </div>
@@ -69,12 +70,7 @@
         <textarea id="idea-input" placeholder="Plant the seed of an idea..."></textarea>
     </div>
 
-    <!-- The scripts are loaded LAST, right before the closing </body> tag -->
     <script src="https://cdn.jsdelivr.net/npm/p5@1.4.1/lib/p5.js"></script>
-
-    <!-- ADD THIS SCRIPT TAG for Transformers.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0"></script>
-
-    <script src="sketch.js"></script>
+    <script type="module" src="sketch.js"></script>
 </body>
 </html>
