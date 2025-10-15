@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bicycles for the Mind</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #0a0a14; }
+        #input-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+        textarea {
+            width: 450px;
+            height: 50px;
+            font-size: 16px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-family: sans-serif;
+        }
+        #button-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #444;
+        }
+        #loading-overlay {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            background-color: #0a0a14;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #loading-text {
+            color: #fff;
+            font-family: sans-serif;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ALL your HTML content comes FIRST -->
+    <div id="loading-overlay">
+        <div id="loading-text">Loading AI models... This may take a moment.</div>
+    </div>
+    
+    <div id="button-container">
+        <button id="save-button">Save Artwork & Ideas</button>
+    </div>
+    
+    <div id="input-container">
+        <textarea id="idea-input" placeholder="Plant the seed of an idea..."></textarea>
+    </div>
+
+    <!-- The scripts are loaded LAST, right before the closing </body> tag -->
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.1/lib/p5.js"></script>
+
+    <!-- ADD THIS SCRIPT TAG for Transformers.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@xenova/transformers@2.6.0"></script>
+
+    <script src="sketch.js"></script>
+</body>
+</html>
