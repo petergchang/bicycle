@@ -66,28 +66,42 @@ const sketch = (p) => {
             trailLayer.noStroke();
             for (let i = particles.length - 1; i >= 0; i--) {
                 let particle = particles[i];
+                particle.px = particle.x;
+                particle.py = particle.y;
                 particle.x += particle.vx;
                 particle.y += particle.vy;
                 particle.lifespan -= 2;
+            
                 if (particle.lifespan <= 0) {
                     particles.splice(i, 1);
                 } else {
                     const c = particle.color;
-                    // 1. Draw the live, fading particle STROKE on the main canvas
-                    p.strokeWeight(1.5);
-                    p.stroke(p.hue(c), p.saturation(c), p.brightness(c), (particle.lifespan / 255) * 0.5);
-                    p.line(particle.px, particle.py, particle.x, particle.y);
-                
-                    // 2. "Stamp" a faint, permanent DOT onto the trailLayer
-                    trailLayer.noStroke();
-                    trailLayer.fill(p.hue(c), p.saturation(c), p.brightness(c), 0.02); // Lower alpha for subtlety
-                    trailLayer.ellipse(particle.x, particle.y, 3);
-                    
-                    // 3. Update the particle's previous position for the next frame
-                    particle.px = particle.x;
-                    particle.py = particle.y;                
+                    const alpha = particle.lifespan / 255;
+            
+                    if (particle.type === 'streak') {
+                        // Draw the live streak
+                        p.strokeWeight(particle.weight);
+                        p.stroke(p.hue(c), p.saturation(c), p.brightness(c), alpha * 0.5);
+                        p.line(particle.px, particle.py, particle.x, particle.y);
+                        
+                        // Stamp a very faint permanent mark
+                        trailLayer.strokeWeight(particle.weight * 0.8);
+                        trailLayer.stroke(p.hue(c), p.saturation(c), p.brightness(c), 0.02);
+                        trailLayer.line(particle.px, particle.py, particle.x, particle.y);
+            
+                    } else { // 'dust'
+                        // Draw the live dust mote
+                        p.noStroke();
+                        p.fill(p.hue(c), p.saturation(c), p.brightness(c), alpha * 0.3);
+                        p.ellipse(particle.x, particle.y, particle.size);
+            
+                        // Stamp a faint permanent glow
+                        trailLayer.noStroke();
+                        trailLayer.fill(p.hue(c), p.saturation(c), p.brightness(c), 0.01);
+                        trailLayer.ellipse(particle.x, particle.y, particle.size * 2);
+                    }
                 }
-            }
+            }            
         }
 
         // 3. Draw the bicycle
@@ -177,11 +191,10 @@ const sketch = (p) => {
                 bicycle.pendingIdeaText = inputText;
                 bicycle.pendingJumpDistance = jumpDistance;
                 bicycle.arrivalPoint = { x: bicycle.targetX, y: bicycle.targetY };
-                const newColor = p.color(
-                    p.map(newVector[10], -0.1, 0.1, 0, 360),   // Hue: The core color of the idea
-                    p.map(newVector[150], -0.1, 0.1, 60, 100), // Saturation: From a rich color to fully vibrant
-                    p.map(newVector[300], -0.1, 0.1, 70, 100)  // Brightness: From a deep color to fully bright
-                );                
+                const hue = p.map(getVectorSliceAverage(newVector, 0, 128), -0.1, 0.1, 0, 360);
+                const saturation = p.random(70, 100);
+                const brightness = p.random(90, 100);
+                const newColor = p.color(hue, saturation, brightness);
                 colorPalette.unshift(newColor);
                 if (colorPalette.length > MAX_PALETTE_SIZE) { colorPalette.pop(); }
                 bicycle.currentVector = newVector;
@@ -201,11 +214,10 @@ const sketch = (p) => {
             wheelRadius: 15, wheelBase: 25, currentVector: initialVector,
             pendingIdeaText: null, arrivalPoint: null
         };
-        const initialColor = p.color(
-            p.map(initialVector[10], -0.1, 0.1, 0, 360),   // Hue
-            p.map(initialVector[150], -0.1, 0.1, 60, 100), // Saturation
-            p.map(initialVector[300], -0.1, 0.1, 70, 100)  // Brightness
-        );    
+        const hue = p.map(getVectorSliceAverage(initialVector, 0, 128), -0.1, 0.1, 0, 360);
+        const saturation = p.random(70, 100);
+        const brightness = p.random(90, 100);
+        const initialColor = p.color(hue, saturation, brightness);    
         colorPalette = [initialColor];
     }
 
@@ -237,20 +249,40 @@ const sketch = (p) => {
         const backWheelX = bicycle.x - bicycle.wheelBase * p.cos(bicycle.angle);
         const backWheelY = bicycle.y - bicycle.wheelBase * p.sin(bicycle.angle);
         for (let i = 0; i < 4; i++) {
-            // We'll use the wheel positions to "seed" the noise, making it unique
-            const backWheelX = bicycle.x - bicycle.wheelBase * p.cos(bicycle.angle);
-            const backWheelY = bicycle.y - bicycle.wheelBase * p.sin(bicycle.angle);
-
             // A particle from the back wheel
-            particles.push({
-                x: backWheelX, y: backWheelY,
-                px: backWheelX, py: backWheelY,
-                vx: p.map(p.noise(backWheelX * 0.01, backWheelY * 0.01, noiseTime), 0, 1, -1, 1),
-                vy: p.map(p.noise(backWheelX * 0.01, backWheelY * 0.01, noiseTime + 100), 0, 1, -1, 1),
-                lifespan: 255, color: getMixedColor()
-            });
+            createParticle(backWheelX, backWheelY);
         }
     }
+
+    function createParticle(x, y) {
+        const particle = {
+            x: x, y: y,
+            px: x, py: y,
+            lifespan: 255,
+            color: getMixedColor()
+        };
+    
+        // 70% chance to create a "Streak", 30% chance to create "Dust"
+        if (p.random(1) < 0.7) {
+            // --- STREAK PARTICLE ---
+            particle.type = 'streak';
+            const angle = p.random(p.TWO_PI);
+            const speed = p.random(1, 3);
+            particle.vx = p.cos(angle) * speed;
+            particle.vy = p.sin(angle) * speed;
+            particle.weight = p.random(0.5, 2); // Variable thickness
+            particle.lifespan = p.random(150, 255); // Streaks last longer
+        } else {
+            // --- DUST PARTICLE ---
+            particle.type = 'dust';
+            particle.vx = p.random(-0.5, 0.5);
+            particle.vy = p.random(-0.5, 0.5);
+            particle.size = p.random(2, 5); // Variable size
+            particle.lifespan = p.random(50, 100); // Dust fades quickly
+        }
+    
+        particles.push(particle);
+    }    
 
     function drawStarfield() {
         p.noStroke();
@@ -353,6 +385,15 @@ const sketch = (p) => {
         
         // Draw the text in the top-left corner
         p.text(`Total Movement: ${displayMiles}m`, 20, 20);
+    }
+
+    function getVectorSliceAverage(vector, start, end) {
+        if (!vector) return 0;
+        let sum = 0;
+        for (let i = start; i < end; i++) {
+            sum += vector[i];
+        }
+        return sum / (end - start);
     }    
 }; // --- END OF THE MAIN SKETCH FUNCTION ---
 
