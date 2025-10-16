@@ -86,9 +86,12 @@ const sketch = (p) => {
                         p.line(particle.px, particle.py, particle.x, particle.y);
                         
                         // Stamp a very faint permanent mark
+                        const strokeLength = 0.3; 
+                        const shortX = p.lerp(particle.px, particle.x, strokeLength);
+                        const shortY = p.lerp(particle.py, particle.y, strokeLength);
                         trailLayer.strokeWeight(particle.weight * 0.8);
-                        trailLayer.stroke(p.hue(c), p.saturation(c), p.brightness(c), 0.02);
-                        trailLayer.line(particle.px, particle.py, particle.x, particle.y);
+                        trailLayer.stroke(p.hue(c), p.saturation(c), p.brightness(c), 0.03);
+                        trailLayer.line(particle.px, particle.py, shortX, shortY);                    
             
                     } else { // 'dust'
                         // Draw the live dust mote
@@ -98,7 +101,7 @@ const sketch = (p) => {
             
                         // Stamp a faint permanent glow
                         trailLayer.noStroke();
-                        trailLayer.fill(p.hue(c), p.saturation(c), p.brightness(c), 0.15);
+                        trailLayer.fill(p.hue(c), p.saturation(c), p.brightness(c), 0.01);
                         trailLayer.ellipse(particle.x, particle.y, particle.size * 3);
                     }
                 }
@@ -183,6 +186,9 @@ const sketch = (p) => {
                 ideaInput.placeholder = "Move the bicycle...";
             } else if (gameState === 'DEVELOPING') {
                 const newVector = analysis.vector;
+                const energyValue = getVectorSliceAverage(newVector, 128, 256);
+                const energy = p.map(energyValue, -0.1, 0.1, 0, 1);
+                bicycle.brushEnergy = energy;
                 const dx = newVector[5] - bicycle.currentVector[5];
                 const dy = newVector[8] - bicycle.currentVector[8];
                 const moveScale = 750;
@@ -219,7 +225,8 @@ const sketch = (p) => {
             groundY: randomY, x: randomX, y: randomY - 200, py: randomY - 200, yVelocity: 0, gravity: 0.5, isDropping: true,
             angle: 0, targetX: null, targetY: null, speed: 0, wheelRotation: 0,
             wheelRadius: 15, wheelBase: 25, currentVector: initialVector,
-            pendingIdeaText: null, arrivalPoint: null
+            pendingIdeaText: null, arrivalPoint: null,
+            brushEnergy: 0.5
         };
         const hueValue = getVectorSliceAverage(initialVector, 0, 128);
         let baseHue;
@@ -279,11 +286,9 @@ const sketch = (p) => {
         };
     
         // --- THE DYNAMIC BRUSH ENGINE ---
-        // Use a different slice of the vector to control the "energy" of the brush.
-        const energyValue = getVectorSliceAverage(bicycle.currentVector, 128, 256);
-        const energy = p.map(energyValue, -0.1, 0.1, 0, 1);
+        const energy = bicycle.brushEnergy;
     
-        if (p.random(1) < 0.8) { // 80% chance for a Streak
+        if (p.random(1) < 0.7) { // 70% chance for a Streak
             particle.type = 'streak';
             const angle = p.random(p.TWO_PI);
             // The speed (and length) of the streak is now tied to the idea's "energy"
