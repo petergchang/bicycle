@@ -56,6 +56,7 @@ const sketch = (p) => {
     p.draw = () => {
         // 1. Draw the background
         p.background(240, 50, 8);
+        p.push(); // Save the current state
         drawStarfield();
         p.image(trailLayer, 0, 0);
 
@@ -197,18 +198,13 @@ const sketch = (p) => {
                 bicycle.pendingIdeaText = inputText;
                 bicycle.pendingJumpDistance = jumpDistance;
                 bicycle.arrivalPoint = { x: bicycle.targetX, y: bicycle.targetY };
-                const hueValue = getVectorSliceAverage(newVector, 0, 128);
-                let baseHue;
-                if (hueValue >= 0) {
-                    baseHue = p.map(p.pow(hueValue, 3), 0, p.pow(0.1, 3), 60, 330);
-                } else {
-                    baseHue = p.map(p.pow(hueValue, 3), -p.pow(0.1, 3), 0, 240, 60);
-                }
-                const saturation = p.random(70, 100);
-                const brightness = p.random(90, 100);
-                const newColor = p.color(basehue, saturation, brightness);
-                colorPalette.unshift(newColor);
-                if (colorPalette.length > MAX_PALETTE_SIZE) { colorPalette.pop(); }
+                bicycle.startColor = colorPalette[0];
+                const hue = p.map(getVectorSliceAverage(newVector, 0, 128), -0.1, 0.1, 0, 360);
+                const saturation = p.map(getVectorSliceAverage(newVector, 128, 256), -0.1, 0.1, 50, 100);
+                const brightness = p.map(getVectorSliceAverage(newVector, 256, 384), -0.1, 0.1, 80, 100);
+                bicycle.endColor = p.color(hue, saturation, brightness);
+                colorPalette.unshift(bicycle.endColor);
+                if (colorPalette.length > MAX_PALETTE_SIZE) { colorPalette.pop(); }            
                 bicycle.currentVector = newVector;
             }
         } catch (error) {
@@ -225,7 +221,8 @@ const sketch = (p) => {
             angle: 0, targetX: null, targetY: null, speed: 0, wheelRotation: 0,
             wheelRadius: 15, wheelBase: 25, currentVector: initialVector,
             pendingIdeaText: null, arrivalPoint: null,
-            brushEnergy: 0.5
+            brushEnergy: 0.5,
+            startColor: null, endColor: null,
         };
         const hueValue = getVectorSliceAverage(initialVector, 0, 128);
         let baseHue;
@@ -237,6 +234,8 @@ const sketch = (p) => {
         const saturation = p.random(70, 100);
         const brightness = p.random(90, 100);
         const initialColor = p.color(baseHue, saturation, brightness);    
+        bicycle.startColor = initialColor;
+        bicycle.endColor = initialColor;
         colorPalette = [initialColor];
     }
 
@@ -265,22 +264,32 @@ const sketch = (p) => {
 
     function emitParticles() {
         if (bicycle.speed < 0.1) return;
+    
+        // --- CALCULATE JOURNEY PROGRESS ---
+        const totalDist = p.dist(bicycle.px, bicycle.py, bicycle.targetX, bicycle.targetY);
+        const currentDist = p.dist(bicycle.px, bicycle.py, bicycle.x, bicycle.y);
+        const progress = p.constrain(currentDist / totalDist, 0, 1);
+        
+        // Get the interpolated color for this exact moment in the journey
+        const currentColor = p.lerpColor(bicycle.startColor, bicycle.endColor, progress);
+        // --- END CALCULATION ---
+    
         const backWheelX = bicycle.x - bicycle.wheelBase * p.cos(bicycle.angle);
         const backWheelY = bicycle.y - bicycle.wheelBase * p.sin(bicycle.angle);
-        for (let i = 0; i < 4; i++) {
-            // A particle from the back wheel
-            createParticle(backWheelX, backWheelY);
+    
+        for (let i = 0; i < 3; i++) {
+            createParticle(backWheelX, backWheelY, currentColor); // Pass the color
         }
-    }
+    }    
 
-    function createParticle(x, y) {
+    function createParticle(x, y, particleColor) {
         // Get the base hue from the most recent color in the palette.
         const baseHue = p.hue(colorPalette[0]);
     
         const particle = {
             x: x, y: y,
             px: x, py: y,
-            color: getMixedColor(baseHue), // Pass the base hue to get a variation
+            color: particleColor, // Pass the base hue to get a variation
             lifespan: 255
         };
     
