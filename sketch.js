@@ -191,7 +191,7 @@ const sketch = (p) => {
                 bicycle.pendingIdeaText = inputText;
                 bicycle.pendingJumpDistance = jumpDistance;
                 bicycle.arrivalPoint = { x: bicycle.targetX, y: bicycle.targetY };
-                const hue = p.map(getVectorSliceAverage(newVector, 0, 128), -0.1, 0.1, 0, 360);
+                const hue = p.map(getVectorSliceAverage(newVector, 0, 128), -0.01, 0.01, 0, 360);
                 const saturation = p.random(70, 100);
                 const brightness = p.random(90, 100);
                 const newColor = p.color(hue, saturation, brightness);
@@ -214,7 +214,7 @@ const sketch = (p) => {
             wheelRadius: 15, wheelBase: 25, currentVector: initialVector,
             pendingIdeaText: null, arrivalPoint: null
         };
-        const hue = p.map(getVectorSliceAverage(initialVector, 0, 128), -0.1, 0.1, 0, 360);
+        const hue = p.map(getVectorSliceAverage(initialVector, 0, 128), -0.01, 0.01, 0, 360);
         const saturation = p.random(70, 100);
         const brightness = p.random(90, 100);
         const initialColor = p.color(hue, saturation, brightness);    
