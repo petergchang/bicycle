@@ -58,6 +58,7 @@ const sketch = (p) => {
         p.background(240, 50, 8);
         drawStarfield();
         p.image(trailLayer, 0, 0);
+        trailLayer.filter(p.BLUR, 0.5);
 
         // 2. Draw the in-world elements
         drawIdeaNodes();
@@ -92,13 +93,13 @@ const sketch = (p) => {
                     } else { // 'dust'
                         // Draw the live dust mote
                         p.noStroke();
-                        p.fill(p.hue(c), p.saturation(c), p.brightness(c), alpha * 0.3);
+                        p.fill(p.hue(c), p.saturation(c), p.brightness(c), alpha * 0.4);
                         p.ellipse(particle.x, particle.y, particle.size);
             
                         // Stamp a faint permanent glow
                         trailLayer.noStroke();
-                        trailLayer.fill(p.hue(c), p.saturation(c), p.brightness(c), 0.01);
-                        trailLayer.ellipse(particle.x, particle.y, particle.size * 2);
+                        trailLayer.fill(p.hue(c), p.saturation(c), p.brightness(c), 0.15);
+                        trailLayer.ellipse(particle.x, particle.y, particle.size * 3);
                     }
                 }
             }            
@@ -191,10 +192,16 @@ const sketch = (p) => {
                 bicycle.pendingIdeaText = inputText;
                 bicycle.pendingJumpDistance = jumpDistance;
                 bicycle.arrivalPoint = { x: bicycle.targetX, y: bicycle.targetY };
-                const hue = p.map(getVectorSliceAverage(newVector, 0, 128), -0.01, 0.01, 0, 360);
+                const hueValue = getVectorSliceAverage(newVector, 0, 128);
+                let baseHue;
+                if (hueValue >= 0) {
+                    baseHue = p.map(p.pow(hueValue, 3), 0, p.pow(0.1, 3), 60, 330);
+                } else {
+                    baseHue = p.map(p.pow(hueValue, 3), -p.pow(0.1, 3), 0, 240, 60);
+                }
                 const saturation = p.random(70, 100);
                 const brightness = p.random(90, 100);
-                const newColor = p.color(hue, saturation, brightness);
+                const newColor = p.color(basehue, saturation, brightness);
                 colorPalette.unshift(newColor);
                 if (colorPalette.length > MAX_PALETTE_SIZE) { colorPalette.pop(); }
                 bicycle.currentVector = newVector;
@@ -214,10 +221,16 @@ const sketch = (p) => {
             wheelRadius: 15, wheelBase: 25, currentVector: initialVector,
             pendingIdeaText: null, arrivalPoint: null
         };
-        const hue = p.map(getVectorSliceAverage(initialVector, 0, 128), -0.01, 0.01, 0, 360);
+        const hueValue = getVectorSliceAverage(initialVector, 0, 128);
+        let baseHue;
+        if (hueValue >= 0) {
+            baseHue = p.map(p.pow(hueValue, 3), 0, p.pow(0.1, 3), 60, 330);
+        } else {
+            baseHue = p.map(p.pow(hueValue, 3), -p.pow(0.1, 3), 0, 240, 60);
+        }
         const saturation = p.random(70, 100);
         const brightness = p.random(90, 100);
-        const initialColor = p.color(hue, saturation, brightness);    
+        const initialColor = p.color(baseHue, saturation, brightness);    
         colorPalette = [initialColor];
     }
 
@@ -255,30 +268,36 @@ const sketch = (p) => {
     }
 
     function createParticle(x, y) {
+        // Get the base hue from the most recent color in the palette.
+        const baseHue = p.hue(colorPalette[0]);
+    
         const particle = {
             x: x, y: y,
             px: x, py: y,
-            lifespan: 255,
-            color: getMixedColor()
+            color: getMixedColor(baseHue), // Pass the base hue to get a variation
+            lifespan: 255
         };
     
-        // 70% chance to create a "Streak", 30% chance to create "Dust"
-        if (p.random(1) < 0.7) {
-            // --- STREAK PARTICLE ---
+        // --- THE DYNAMIC BRUSH ENGINE ---
+        // Use a different slice of the vector to control the "energy" of the brush.
+        const energyValue = getVectorSliceAverage(bicycle.currentVector, 128, 256);
+        const energy = p.map(energyValue, -0.1, 0.1, 0, 1);
+    
+        if (p.random(1) < 0.8) { // 80% chance for a Streak
             particle.type = 'streak';
             const angle = p.random(p.TWO_PI);
-            const speed = p.random(1, 3);
+            // The speed (and length) of the streak is now tied to the idea's "energy"
+            const speed = p.map(energy, 0, 1, 1.0, 5.0) + p.random(-0.5, 0.5);
             particle.vx = p.cos(angle) * speed;
             particle.vy = p.sin(angle) * speed;
-            particle.weight = p.random(0.5, 2); // Variable thickness
-            particle.lifespan = p.random(150, 255); // Streaks last longer
+            particle.weight = p.random(0.5, 2);
+            particle.lifespan = p.random(100, 200);
         } else {
-            // --- DUST PARTICLE ---
             particle.type = 'dust';
-            particle.vx = p.random(-0.5, 0.5);
-            particle.vy = p.random(-0.5, 0.5);
-            particle.size = p.random(2, 5); // Variable size
-            particle.lifespan = p.random(50, 100); // Dust fades quickly
+            particle.vx = p.random(-0.3, 0.3);
+            particle.vy = p.random(-0.3, 0.3);
+            particle.size = p.random(2, 6);
+            particle.lifespan = p.random(80, 150);
         }
     
         particles.push(particle);
@@ -296,6 +315,7 @@ const sketch = (p) => {
         p.background(240, 50, 8);
         drawStarfield();
         p.image(trailLayer, 0, 0);
+        trailLayer.filter(p.BLUR, 0.5);
         drawIdeaNodes();
         drawUI();
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
@@ -321,14 +341,13 @@ const sketch = (p) => {
         return startAngle + difference * amount;
     }
 
-    function getMixedColor() {
-        if (colorPalette.length === 0) { return p.color(255); }
-        if (colorPalette.length === 1) { return colorPalette[0]; }
-        let index1 = p.floor(p.random(colorPalette.length));
-        let index2 = p.floor(p.random(colorPalette.length));
-        while (index2 === index1) { index2 = p.floor(p.random(colorPalette.length)); }
-        return p.lerpColor(colorPalette[index1], colorPalette[index2], p.random(0.2, 0.8));
-    }
+    function getMixedColor(baseHue) {
+        if (colorPalette.length === 0) { return p.color(0, 0, 100); } // White in HSB
+        const hue = baseHue + p.random(-30, 30); // Add a random shift to the base hue
+        const saturation = p.random(70, 100);
+        const brightness = p.random(90, 100);
+        return p.color(hue, saturation, brightness);
+    }    
 
     function drawIdeaNodes() {
         const hoverRadius = 10;
