@@ -58,7 +58,6 @@ const sketch = (p) => {
         p.background(240, 50, 8);
         drawStarfield();
         p.image(trailLayer, 0, 0);
-        trailLayer.filter(p.BLUR, 0.5);
 
         // 2. Draw the in-world elements
         drawIdeaNodes();
@@ -320,7 +319,6 @@ const sketch = (p) => {
         p.background(240, 50, 8);
         drawStarfield();
         p.image(trailLayer, 0, 0);
-        trailLayer.filter(p.BLUR, 0.5);
         drawIdeaNodes();
         drawUI();
         const timestamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
