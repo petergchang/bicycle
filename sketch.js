@@ -293,7 +293,7 @@ const sketch = (p) => {
     }
 
     function saveArt() {
-        p.background(10, 10, 20);
+        p.background(240, 50, 8);
         drawStarfield();
         p.image(trailLayer, 0, 0);
         drawIdeaNodes();
