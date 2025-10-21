@@ -283,37 +283,58 @@ const sketch = (p) => {
     }    
 
     function createParticle(x, y, particleColor) {
-        // Get the base hue from the most recent color in the palette.
-        const baseHue = p.hue(colorPalette[0]);
-    
         const particle = {
             x: x, y: y,
             px: x, py: y,
-            color: particleColor, // Pass the base hue to get a variation
+            color: particleColor,
             lifespan: 255
         };
     
         // --- THE DYNAMIC BRUSH ENGINE ---
         const energy = bicycle.brushEnergy;
     
-        if (p.random(1) < 0.7) { // 70% chance for a Streak
-            particle.type = 'streak';
-            const angle = p.random(p.TWO_PI);
-            // The speed (and length) of the streak is now tied to the idea's "energy"
-            const speed = p.map(energy, 0, 1, 1.0, 5.0) + p.random(-0.5, 0.5);
-            particle.vx = p.cos(angle) * speed;
-            particle.vy = p.sin(angle) * speed;
-            particle.weight = p.random(0.5, 2);
-            particle.lifespan = p.random(100, 200);
-        } else {
-            particle.type = 'dust';
-            particle.vx = p.random(-0.3, 0.3);
-            particle.vy = p.random(-0.3, 0.3);
-            particle.size = p.random(2, 6);
-            particle.lifespan = p.random(80, 150);
+        let brushStyle = 'default';
+        if (bicycle.currentIntent) {
+            switch (bicycle.currentIntent) {
+                case 'constructive argument':
+                    brushStyle = 'constructive';
+                    break;
+                case 'critical challenge':
+                    brushStyle = 'critical';
+                    break;
+                case 'question':
+                    brushStyle = 'question';
+                    break;
+            }
         }
     
-        particles.push(particle);
+        // Now, create different particles based on the style
+        if (brushStyle === 'critical' || (brushStyle === 'default' && p.random(1) < 0.2)) {
+            // Critical challenges create more chaotic 'dust' bursts
+            particle.type = 'dust';
+            particle.vx = p.random(-1.5, 1.5);
+            particle.vy = p.random(-1.5, 1.5);
+            particle.size = p.random(3, 8);
+            particle.lifespan = p.random(60, 120);
+        } else if (brushStyle === 'question') {
+            // Questions leave soft, glowing, slow-moving motes
+            particle.type = 'dust';
+            particle.vx = p.random(-0.2, 0.2);
+            particle.vy = p.random(-0.2, 0.2);
+            particle.size = p.random(5, 10);
+            particle.lifespan = p.random(200, 300); // They last longer
+        } else { // 'constructive' or 'default'
+            // Constructive arguments create long, purposeful streaks
+            particle.type = 'streak';
+            const angle = p.random(p.TWO_PI);
+            const speed = p.map(energy, 0, 1, 2.0, 6.0) + p.random(-0.5, 0.5); // More energy
+            particle.vx = p.cos(angle) * speed;
+            particle.vy = p.sin(angle) * speed;
+            particle.weight = p.random(1, 3); // Thicker lines
+            particle.lifespan = p.random(150, 250);
+        }
+    
+        particles.push(particle);    
     }    
 
     function drawStarfield() {
@@ -352,14 +373,6 @@ const sketch = (p) => {
         else if (difference < -p.PI) { difference += p.TWO_PI; }
         return startAngle + difference * amount;
     }
-
-    function getMixedColor(baseHue) {
-        if (colorPalette.length === 0) { return p.color(0, 0, 100); } // White in HSB
-        const hue = baseHue + p.random(-30, 30); // Add a random shift to the base hue
-        const saturation = p.random(70, 100);
-        const brightness = p.random(90, 100);
-        return p.color(hue, saturation, brightness);
-    }    
 
     function drawIdeaNodes() {
         const hoverRadius = 10;
